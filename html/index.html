@@ -109,6 +109,19 @@
     border: 1px dashed var(--border); border-radius: 9px; padding: 22px;
     text-align: center; color: var(--muted); font-size: 13.5px; background: var(--panel-2);
   }
+  table.metrics { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.metrics td { padding: 9px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.metrics tr:last-child td { border-bottom: 0; }
+  table.metrics .m-label { color: var(--muted); }
+  table.metrics .m-val { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.metrics .m-act { text-align: right; width: 1%; white-space: nowrap; }
+  table.metrics .m-act button { padding: 6px 12px; font-size: 13px; }
+  .archives-row { margin-top: 12px; }
+  .link-btn {
+    background: none; border: 0; padding: 4px 0; color: var(--muted);
+    font-size: 13px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .link-btn:hover:not(:disabled) { color: var(--accent); border: 0; }
   .log {
     grid-column: 1 / -1; background: var(--panel); border: 1px solid var(--border);
     border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px;
@@ -164,16 +177,41 @@
     <!-- Récolte -->
     <section class="card">
       <h2>Récolte PV / CA</h2>
-      <p class="lead">Scrap → stock → import Paperless → métadonnées. La récolte applique réellement les imports.</p>
-      <div class="row">
-        <button data-api="dash-recolte-current" data-method="POST"
-                data-confirm="Lancer la récolte de la page courante ?">Récolte page courante</button>
-        <button data-api="dash-recolte-archives" data-method="POST"
-                data-confirm="Lancer la récolte des archives ? (traitement long)">Récolte archives</button>
-        <button data-api="dash-confirm" data-method="POST"
-                data-confirm="Confirmer les imports en attente ?">Confirmer imports</button>
-        <button data-api="dash-retry" data-method="POST"
-                data-confirm="Relancer les items en échec ?">Relancer échecs</button>
+      <table class="metrics">
+        <tbody>
+          <tr>
+            <td class="m-label">Dernière récolte</td>
+            <td class="m-val" id="rc-derniere">—</td>
+            <td class="m-act"></td>
+          </tr>
+          <tr>
+            <td class="m-label">Dernier PV/CA collecté</td>
+            <td class="m-val" id="rc-collecte">—</td>
+            <td class="m-act"><button data-api="dash-recolte-current" data-method="POST"
+                data-confirm="Lancer la récolte de la page courante ?">Récolter</button></td>
+          </tr>
+          <tr>
+            <td class="m-label">Imports à confirmer</td>
+            <td class="m-val" id="rc-confirmer">—</td>
+            <td class="m-act"><button data-api="dash-confirm" data-method="POST"
+                data-confirm="Confirmer les imports en attente ?">Confirmer</button></td>
+          </tr>
+          <tr>
+            <td class="m-label">Échecs</td>
+            <td class="m-val" id="rc-echecs">—</td>
+            <td class="m-act"></td>
+          </tr>
+          <tr>
+            <td class="m-label">À relancer</td>
+            <td class="m-val" id="rc-relancer">—</td>
+            <td class="m-act"><button data-api="dash-retry" data-method="POST"
+                data-confirm="Relancer les items en échec ?">Relancer</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="archives-row">
+        <button class="link-btn" data-api="dash-recolte-archives" data-method="POST"
+                data-confirm="Relancer la récolte des archives ? Opération ponctuelle et longue.">Récolter les archives (ponctuel)</button>
       </div>
     </section>
 
@@ -268,6 +306,7 @@
         if (data) setStats(data.result || data);
         var msg = (data && (data.message || data.status)) ? esc(data.message || data.status) : "OK";
         log("ok", btn.textContent.trim(), msg);
+        setTimeout(loadRecolte, 3000);
       }
     } catch (e) {
       log("err", btn.textContent.trim(), "réseau injoignable (" + esc(e.message) + ")");
@@ -302,11 +341,32 @@
     } catch (e) { /* pas d'historique disponible : on garde le journal en direct */ }
   }
 
+  async function loadRecolte() {
+    try {
+      var res = await fetch("/api/recolte", { headers: { "Accept": "application/json" } });
+      if (!res.ok) return;
+      var rows = await res.json();
+      if (!Array.isArray(rows) || !rows.length) return;
+      var r = null;
+      for (var i = 0; i < rows.length; i++) { if (rows[i].source_key === "pv-ca") { r = rows[i]; break; } }
+      if (!r) r = rows[0];
+      var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+      set("rc-derniere", r.derniere_recolte ? fmtTs(r.derniere_recolte) : "jamais");
+      var stored = (r.dernier_stored == null) ? "—" : r.dernier_stored;
+      var disc = (r.dernier_discovered == null) ? "—" : r.dernier_discovered;
+      set("rc-collecte", stored + " / " + disc);
+      set("rc-confirmer", r.a_confirmer == null ? "—" : r.a_confirmer);
+      set("rc-echecs", r.en_erreur == null ? "—" : r.en_erreur);
+      set("rc-relancer", r.a_relancer == null ? "—" : r.a_relancer);
+    } catch (e) { /* métriques indisponibles */ }
+  }
+
   document.querySelectorAll("button[data-api]").forEach(function (b) {
     b.addEventListener("click", function () { call(b); });
   });
 
   loadLog();
+  loadRecolte();
 })();
 </script>
 </body>

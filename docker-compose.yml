@@ -13,8 +13,9 @@ services:
       - docsia_net
     depends_on:
       - postgrest
+      - postgrest_recolte
 
-  # Lecteur du journal ops_log (lecture seule via le rôle web_anon).
+  # Lecteur du journal ops_log (base ubm_datas), lecture seule via web_anon.
   postgrest:
     image: postgrest/postgrest:v12.2.3
     container_name: dash_postgrest
@@ -29,6 +30,21 @@ services:
       - docsia_net       # joint par nginx (conteneur dash)
       - metabase_net     # joint ubm_postgres
 
+  # Lecteur des métriques récolte (base paperless, schéma recolte), lecture seule.
+  postgrest_recolte:
+    image: postgrest/postgrest:v12.2.3
+    container_name: dash_postgrest_recolte
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${PGRST_RECOLTE_AUTH_PASSWORD}@paperless_postgres:5432/paperless
+      PGRST_DB_SCHEMA: api
+      PGRST_DB_ANON_ROLE: web_anon
+      PGRST_DB_MAX_ROWS: "200"
+      PGRST_SERVER_PORT: "3000"
+    networks:
+      - docsia_net       # joint par nginx (conteneur dash)
+      - paperless_net    # joint paperless_postgres
+
 networks:
   # Réseau partagé avec n8n / docsia_backend (nginx -> n8n, nginx -> postgrest).
   docsia_net:
@@ -37,4 +53,8 @@ networks:
   # Réseau de la stack metabase, où vit ubm_postgres.
   metabase_net:
     name: metabase_metabase_network
+    external: true
+  # Réseau de la stack paperless, où vit paperless_postgres.
+  paperless_net:
+    name: paperless_paperless_network
     external: true
