@@ -11,10 +11,30 @@ services:
       - "127.0.0.1:8088:80"
     networks:
       - docsia_net
+    depends_on:
+      - postgrest
+
+  # Lecteur du journal ops_log (lecture seule via le rôle web_anon).
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    container_name: dash_postgrest
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${PGRST_AUTH_PASSWORD}@ubm_postgres:5432/ubm_datas
+      PGRST_DB_SCHEMA: api
+      PGRST_DB_ANON_ROLE: web_anon
+      PGRST_DB_MAX_ROWS: "200"
+      PGRST_SERVER_PORT: "3000"
+    networks:
+      - docsia_net       # joint par nginx (conteneur dash)
+      - metabase_net     # joint ubm_postgres
 
 networks:
-  # Réseau partagé avec n8n (et docsia_backend). Permet à nginx de joindre
-  # http://n8n:5678 en interne, sans exposer n8n au navigateur.
+  # Réseau partagé avec n8n / docsia_backend (nginx -> n8n, nginx -> postgrest).
   docsia_net:
     name: docker_default
+    external: true
+  # Réseau de la stack metabase, où vit ubm_postgres.
+  metabase_net:
+    name: metabase_metabase_network
     external: true

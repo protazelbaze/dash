@@ -1,5 +1,5 @@
 # macOS
 .DS_Store
 
-# Rien de secret ici : le dashboard ne porte aucun .env.
-# (Les secrets restent côté n8n / docsia, jamais dans ce dépôt.)
+# Secrets locaux, jamais versionnés (seul .env.example l'est).
+.env

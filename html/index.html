@@ -206,12 +206,19 @@
     var time = p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
     return date + " " + time;
   }
+  function fmtTs(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    var p = function (n) { return String(n).padStart(2, "0"); };
+    return p(d.getDate()) + "/" + p(d.getMonth() + 1) + "/" + d.getFullYear() + " " +
+           p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  }
   function log(kind, label, detail) {
     if (firstLog) { logEl.innerHTML = ""; firstLog = false; }
     var line = document.createElement("div");
     line.className = "line " + kind;
     line.innerHTML = '<time>' + stamp() + '</time><span><b>' + label + '</b>' +
-                     (detail ? ' — ' + detail : '') + '</span>';
+                     (detail ? ' · ' + detail : '') + '</span>';
     logEl.prepend(line);
   }
   function esc(s) {
@@ -265,9 +272,37 @@
     }
   }
 
+  async function loadLog() {
+    try {
+      var res = await fetch("/api/log?order=ts.desc&limit=50", { headers: { "Accept": "application/json" } });
+      if (!res.ok) return;
+      var rows = await res.json();
+      if (!Array.isArray(rows) || !rows.length) return;
+      if (firstLog) { logEl.innerHTML = ""; firstLog = false; }
+      rows.forEach(function (r) {
+        var kind = r.status === "ok" ? "ok" : (r.status === "error" ? "err" : "");
+        var label = (r.source ? r.source + " · " : "") + (r.action || "");
+        var detail = "";
+        if (r.detail != null) {
+          detail = (typeof r.detail === "object")
+            ? (r.detail.message || JSON.stringify(r.detail))
+            : String(r.detail);
+        }
+        var line = document.createElement("div");
+        line.className = "line " + kind;
+        line.innerHTML = '<time>' + fmtTs(r.ts) + '</time><span><b>' + esc(label) + '</b>' +
+                         (detail ? ' · ' + esc(detail) : '') + '</span>';
+        // rows triées du plus récent au plus ancien : append garde le plus récent en haut
+        logEl.appendChild(line);
+      });
+    } catch (e) { /* pas d'historique disponible : on garde le journal en direct */ }
+  }
+
   document.querySelectorAll("button[data-api]").forEach(function (b) {
     b.addEventListener("click", function () { call(b); });
   });
+
+  loadLog();
 })();
 </script>
 </body>
