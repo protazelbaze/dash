@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>DOCSIA · Console UBM</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --panel-2: #fafbfc;
+    --border: #e2e5ea;
+    --text: #1c2230;
+    --muted: #626b7d;
+    --accent: #2f6f5b;
+    --accent-ink: #ffffff;
+    --accent-soft: #e6f0ec;
+    --warn: #8a6d1f;
+    --warn-soft: #f6efd8;
+    --ok: #2f6f5b;
+    --err: #a23b34;
+    --shadow: 0 1px 2px rgba(20,25,35,.06), 0 4px 16px rgba(20,25,35,.05);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b;
+      --panel: #1a1e26;
+      --panel-2: #1f242d;
+      --border: #2b313c;
+      --text: #e7ebf1;
+      --muted: #97a1b2;
+      --accent: #4c9d84;
+      --accent-ink: #0c0f13;
+      --accent-soft: #1d2b27;
+      --warn: #d8b45a;
+      --warn-soft: #2a2616;
+      --ok: #4c9d84;
+      --err: #d97a72;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 28px 20px 64px; }
+  header.top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  .brand .tag {
+    font-size: 12px; color: var(--muted); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .env { font-size: 12.5px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .card h2 {
+    font-size: 14px; margin: 0; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); font-weight: 600;
+  }
+  .card .lead { font-size: 13.5px; color: var(--muted); margin: -4px 0 2px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-size: 14px; font-weight: 550;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    padding: 9px 14px; border-radius: 9px; cursor: pointer;
+    transition: background .12s ease, border-color .12s ease, transform .05s ease;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.06); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.busy { position: relative; color: transparent; }
+  button.busy::after {
+    content: ""; position: absolute; inset: 0; margin: auto;
+    width: 15px; height: 15px; border: 2px solid currentColor; border-top-color: transparent;
+    border-radius: 50%; animation: spin .7s linear infinite; color: var(--accent-ink);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .badge {
+    display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px;
+    border-radius: 999px; background: var(--warn-soft); color: var(--warn);
+    border: 1px solid transparent;
+  }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px;
+    padding: 10px 12px;
+  }
+  .stat .n { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+  .stat .l { font-size: 12px; color: var(--muted); }
+  .placeholder {
+    border: 1px dashed var(--border); border-radius: 9px; padding: 22px;
+    text-align: center; color: var(--muted); font-size: 13.5px; background: var(--panel-2);
+  }
+  .log {
+    grid-column: 1 / -1; background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px;
+    font-size: 13px; min-height: 46px;
+  }
+  .log .line { display: flex; gap: 10px; padding: 3px 0; color: var(--muted); }
+  .log .line time { font-variant-numeric: tabular-nums; opacity: .8; white-space: nowrap; }
+  .log .line.ok b { color: var(--ok); }
+  .log .line.err b { color: var(--err); }
+  .log .empty { color: var(--muted); opacity: .8; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  footer { margin-top: 26px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>DOCSIA · Console UBM</h1>
+      <span class="tag">interne</span>
+    </div>
+    <div class="env">Université Bordeaux-Montaigne · pilotage récolte &amp; ingestion IA</div>
+  </header>
+
+  <div class="grid">
+
+    <!-- Statut DOCSIA -->
+    <section class="card">
+      <h2>Statut DOCSIA</h2>
+      <p class="lead">Volumétrie du corpus (Paperless, embeddings, tags).</p>
+      <div class="stats">
+        <div class="stat"><div class="n" id="st-docs">—</div><div class="l">Documents</div></div>
+        <div class="stat"><div class="n" id="st-emb">—</div><div class="l">Embeddings</div></div>
+        <div class="stat"><div class="n" id="st-tags">—</div><div class="l">Tagués</div></div>
+      </div>
+      <div class="row">
+        <button id="btn-status" data-api="dash-status" data-method="GET">Rafraîchir le statut</button>
+      </div>
+    </section>
+
+    <!-- Actions IA -->
+    <section class="card">
+      <h2>Ingestion IA</h2>
+      <p class="lead">Enchaîne index → embeddings → tags → statut, sur ce qui reste à traiter.</p>
+      <div class="row">
+        <button class="primary" id="btn-ingest" data-api="dash-ingestion" data-method="POST"
+                data-confirm="Lancer l'ingestion IA complète ?">Lancer l'ingestion IA</button>
+      </div>
+      <p class="lead" style="margin-top:auto">Le traitement continue côté serveur même après réponse. Rafraîchis le statut pour suivre l'avancement.</p>
+    </section>
+
+    <!-- Récolte -->
+    <section class="card">
+      <h2>Récolte PV / CA <span class="badge">à venir · nœud SSH</span></h2>
+      <p class="lead">Nécessite le nœud SSH n8n (docker sur l'hôte) avant d'être actionnable.</p>
+      <div class="row">
+        <button disabled>Récolte page courante</button>
+        <button disabled>Récolte archives</button>
+        <button disabled>Confirmer imports</button>
+        <button disabled>Relancer échecs</button>
+      </div>
+    </section>
+
+    <!-- Metabase -->
+    <section class="card">
+      <h2>Statistiques</h2>
+      <p class="lead">Vues Metabase intégrées.</p>
+      <div class="placeholder">Phase 2 · intégration Metabase (embed signé via n8n)</div>
+    </section>
+
+    <!-- Journal -->
+    <section class="log">
+      <div id="log"><span class="empty">Aucune action pour l'instant.</span></div>
+    </section>
+
+  </div>
+
+  <footer>
+    Console servie par nginx (<code>/opt/stacks/dash</code>), actions relayées vers n8n en interne.
+    Accès restreint par Cloudflare Access.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var logEl = document.getElementById("log");
+  var firstLog = true;
+
+  function stamp() {
+    var d = new Date();
+    return String(d.getHours()).padStart(2,"0") + ":" +
+           String(d.getMinutes()).padStart(2,"0") + ":" +
+           String(d.getSeconds()).padStart(2,"0");
+  }
+  function log(kind, label, detail) {
+    if (firstLog) { logEl.innerHTML = ""; firstLog = false; }
+    var line = document.createElement("div");
+    line.className = "line " + kind;
+    line.innerHTML = '<time>' + stamp() + '</time><span><b>' + label + '</b>' +
+                     (detail ? ' — ' + detail : '') + '</span>';
+    logEl.prepend(line);
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c];
+    });
+  }
+
+  function setStats(o) {
+    if (!o || typeof o !== "object") return;
+    var map = { "st-docs": ["documents","paperless","docs","total"],
+                "st-emb": ["embedded","embeddings","embedded_docs","chunks"],
+                "st-tags": ["tagged","documents_tagged","tags"] };
+    Object.keys(map).forEach(function (id) {
+      for (var i = 0; i < map[id].length; i++) {
+        var k = map[id][i];
+        if (o[k] != null) { document.getElementById(id).textContent = o[k]; break; }
+      }
+    });
+  }
+
+  async function call(btn) {
+    var name = btn.getAttribute("data-api");
+    var method = btn.getAttribute("data-method") || "POST";
+    var confirmMsg = btn.getAttribute("data-confirm");
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+
+    btn.classList.add("busy"); btn.disabled = true;
+    log("", btn.textContent.trim(), "en cours…");
+    try {
+      var res = await fetch("/api/" + name, {
+        method: method,
+        headers: { "Accept": "application/json" }
+      });
+      var txt = await res.text();
+      var data = null;
+      try { data = JSON.parse(txt); } catch (e) {}
+      if (!res.ok) {
+        log("err", btn.textContent.trim(), "HTTP " + res.status + (txt ? " · " + esc(txt.slice(0,160)) : ""));
+      } else {
+        if (data) setStats(data.result || data);
+        var msg = (data && (data.message || data.status)) ? esc(data.message || data.status) : "OK";
+        log("ok", btn.textContent.trim(), msg);
+      }
+    } catch (e) {
+      log("err", btn.textContent.trim(), "réseau injoignable (" + esc(e.message) + ")");
+    } finally {
+      btn.classList.remove("busy"); btn.disabled = false;
+    }
+  }
+
+  document.querySelectorAll("button[data-api]").forEach(function (b) {
+    b.addEventListener("click", function () { call(b); });
+  });
+})();
+</script>
+</body>
+</html>

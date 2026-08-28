@@ -1,0 +1,20 @@
+services:
+  dash:
+    image: nginx:alpine
+    container_name: dash
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./html:/usr/share/nginx/html:ro
+    ports:
+      # Exposé uniquement en local : c'est cloudflared qui publie dash.montaigne.contact.
+      - "127.0.0.1:8088:80"
+    networks:
+      - docsia_net
+
+networks:
+  # Réseau partagé avec n8n (et docsia_backend). Permet à nginx de joindre
+  # http://n8n:5678 en interne, sans exposer n8n au navigateur.
+  docsia_net:
+    name: docker_default
+    external: true
