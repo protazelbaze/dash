@@ -163,13 +163,17 @@
 
     <!-- Récolte -->
     <section class="card">
-      <h2>Récolte PV / CA <span class="badge">à venir · nœud SSH</span></h2>
-      <p class="lead">Nécessite le nœud SSH n8n (docker sur l'hôte) avant d'être actionnable.</p>
+      <h2>Récolte PV / CA</h2>
+      <p class="lead">Scrap → stock → import Paperless → métadonnées. La récolte applique réellement les imports.</p>
       <div class="row">
-        <button disabled>Récolte page courante</button>
-        <button disabled>Récolte archives</button>
-        <button disabled>Confirmer imports</button>
-        <button disabled>Relancer échecs</button>
+        <button data-api="dash-recolte-current" data-method="POST"
+                data-confirm="Lancer la récolte de la page courante ?">Récolte page courante</button>
+        <button data-api="dash-recolte-archives" data-method="POST"
+                data-confirm="Lancer la récolte des archives ? (traitement long)">Récolte archives</button>
+        <button data-api="dash-confirm" data-method="POST"
+                data-confirm="Confirmer les imports en attente ?">Confirmer imports</button>
+        <button data-api="dash-retry" data-method="POST"
+                data-confirm="Relancer les items en échec ?">Relancer échecs</button>
       </div>
     </section>
 
