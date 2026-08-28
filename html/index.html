@@ -123,6 +123,8 @@
     font-size: 13px; text-decoration: underline; text-underline-offset: 3px;
   }
   .link-btn:hover:not(:disabled) { color: var(--accent); border: 0; }
+  .mb-embed { width: 100%; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; background: var(--panel-2); }
+  .mb-embed iframe { display: block; width: 100%; height: 560px; border: 0; }
   .log {
     grid-column: 1 / -1; background: var(--panel); border: 1px solid var(--border);
     border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px;
@@ -219,8 +221,11 @@
     <!-- Metabase -->
     <section class="card">
       <h2>Statistiques</h2>
-      <p class="lead">Vues Metabase intégrées.</p>
-      <div class="placeholder">Phase 2 · intégration Metabase (embed signé via n8n)</div>
+      <p class="lead">Vues Metabase.</p>
+      <div class="mb-embed">
+        <iframe src="https://metabase.montaigne.contact/public/dashboard/38f2a497-bb0a-48a2-8227-c567742329b9#bordered=false&titled=false"
+                title="Statistiques Metabase" loading="lazy"></iframe>
+      </div>
     </section>
 
     <!-- Journal -->
