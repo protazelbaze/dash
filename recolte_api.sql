@@ -5,7 +5,10 @@
 
 create schema if not exists api;
 
-create or replace view api.recolte_stats as
+-- DROP puis CREATE : PostgreSQL refuse de retirer/renommer des colonnes via
+-- CREATE OR REPLACE VIEW. Le grant sur la vue est reposé plus bas.
+drop view if exists api.recolte_stats;
+create view api.recolte_stats as
 select
   c.source_key,
   c.label,
