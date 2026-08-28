@@ -116,6 +116,7 @@
   table.metrics .m-val { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
   table.metrics .m-act { text-align: right; width: 1%; white-space: nowrap; }
   table.metrics .m-act button { padding: 6px 12px; font-size: 13px; }
+  table.metrics .m-sub { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
   .archives-row { margin-top: 12px; }
   .link-btn {
     background: none; border: 0; padding: 4px 0; color: var(--muted);
@@ -185,7 +186,7 @@
             <td class="m-act"></td>
           </tr>
           <tr>
-            <td class="m-label">Dernier PV/CA collecté</td>
+            <td class="m-label">Dernier PV/CA collecté<span class="m-sub" id="rc-seance"></span></td>
             <td class="m-val" id="rc-collecte">—</td>
             <td class="m-act"><button data-api="dash-recolte-current" data-method="POST"
                 data-confirm="Lancer la récolte de la page courante ?">Récolter</button></td>
@@ -352,9 +353,15 @@
       if (!r) r = rows[0];
       var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
       set("rc-derniere", r.derniere_recolte ? fmtTs(r.derniere_recolte) : "jamais");
-      var stored = (r.dernier_stored == null) ? "—" : r.dernier_stored;
-      var disc = (r.dernier_discovered == null) ? "—" : r.dernier_discovered;
-      set("rc-collecte", stored + " / " + disc);
+      var col = (r.seance_importes == null) ? "—" : r.seance_importes;
+      var tot = (r.seance_total == null) ? "—" : r.seance_total;
+      set("rc-collecte", col + " / " + tot);
+      if (r.derniere_seance) {
+        var d = String(r.derniere_seance).slice(0, 10).split("-");
+        set("rc-seance", d.length === 3 ? ("séance du " + d[2] + "/" + d[1] + "/" + d[0]) : "");
+      } else {
+        set("rc-seance", "");
+      }
       set("rc-confirmer", r.a_confirmer == null ? "—" : r.a_confirmer);
       set("rc-echecs", r.en_erreur == null ? "—" : r.en_erreur);
       set("rc-relancer", r.a_relancer == null ? "—" : r.a_relancer);

@@ -1,5 +1,6 @@
 -- Vue dashboard des métriques récolte + rôles PostgREST lecture seule.
 -- À exécuter sur la base PAPERLESS (schéma recolte déjà présent).
+-- Idempotent : ré-exécutable pour mettre à jour la vue.
 -- Remplace CHANGE_ME_AUTH_RECOLTE, ou pose le mot de passe ensuite via ALTER ROLE.
 
 create schema if not exists api;
@@ -8,15 +9,16 @@ create or replace view api.recolte_stats as
 select
   c.source_key,
   c.label,
-  c.derniere_recolte,
+  c.derniere_recolte,                              -- date du dernier run terminé
   c.total,
   c.importes,
   c.en_erreur,
-  lr.discovered   as dernier_discovered,
-  lr.stored       as dernier_stored,
-  lr.imported     as dernier_imported,
-  lr.status       as dernier_status,
-  lr.finished_at  as dernier_run_at,
+  ls.seance_date        as derniere_seance,        -- dernière séance (PV/CA)
+  ls.total              as seance_total,           -- docs de cette séance
+  ls.stored             as seance_stored,
+  ls.importes           as seance_importes,        -- docs de cette séance dans Paperless
+  lr.status             as dernier_run_status,
+  lr.finished_at        as dernier_run_at,
   (select count(*) from recolte.items i
      where i.source_key = c.source_key
        and i.stored_at is not null and i.imported_at is null) as a_confirmer,
@@ -24,7 +26,19 @@ select
      where ar.source_key = c.source_key) as a_relancer
 from recolte.completude c
 left join lateral (
-  select * from recolte.runs r
+  select i.seance_date,
+         count(*)                                          as total,
+         count(*) filter (where i.stored_at is not null)   as stored,
+         count(*) filter (where i.imported_at is not null) as importes
+  from recolte.items i
+  where i.source_key = c.source_key and i.seance_date is not null
+  group by i.seance_date
+  order by i.seance_date desc
+  limit 1
+) ls on true
+left join lateral (
+  select status, finished_at
+  from recolte.runs r
   where r.source_key = c.source_key
   order by started_at desc
   limit 1
